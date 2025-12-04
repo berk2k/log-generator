@@ -1,3 +1,3 @@
-module LogGenator
+module log-generator
 
 go 1.25.5
