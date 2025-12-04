@@ -9,6 +9,7 @@ type Worker struct {
 	ID     int
 	InChan <-chan domain.LogMessage //recieve-only
 	Logger *infrastructure.ConsoleLogger
+	Count  int
 }
 
 func NewWorker(id int, in <-chan domain.LogMessage, logger *infrastructure.ConsoleLogger) *Worker {
@@ -23,6 +24,7 @@ func (w *Worker) Start() {
 	go func() {
 		for msg := range w.InChan {
 			_ = w.Logger.Write(msg)
+			w.Count++
 		}
 	}()
 }
