@@ -19,12 +19,26 @@ func main() {
 	producer.Start()
 
 	// worker pool
+	workers := []*application.Worker{}
+
 	for i := 1; i <= 5; i++ {
 		worker := application.NewWorker(i, logChan, logger)
+		workers = append(workers, worker)
 		worker.Start()
 	}
 
-	time.Sleep(5 * time.Second)
+	for i := 0; i < 2; i++ {
+		time.Sleep(1 * time.Second)
+		fmt.Print("Stats: ")
+
+		for _, w := range workers {
+			fmt.Printf("W%d=%d ", w.ID, w.Count)
+		}
+
+		fmt.Println()
+	}
+
 	fmt.Println("Program finished")
+
 	//select {} // endless loop
 }
