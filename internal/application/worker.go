@@ -11,7 +11,7 @@ type Worker struct {
 	Logger *infrastructure.ConsoleLogger
 }
 
-func newWorker(id int, in <-chan domain.LogMessage, logger *infrastructure.ConsoleLogger) *Worker {
+func NewWorker(id int, in <-chan domain.LogMessage, logger *infrastructure.ConsoleLogger) *Worker {
 	return &Worker{
 		ID:     id,
 		InChan: in,
