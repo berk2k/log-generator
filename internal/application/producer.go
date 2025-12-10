@@ -8,12 +8,14 @@ import (
 type Producer struct {
 	OutChan chan<- domain.LogMessage // send-only
 	Rate    time.Duration
+	Metrics *Metrics
 }
 
-func NewProducer(out chan<- domain.LogMessage, rate time.Duration) *Producer {
+func NewProducer(out chan<- domain.LogMessage, rate time.Duration, metrics *Metrics) *Producer {
 	return &Producer{
 		OutChan: out,
 		Rate:    rate,
+		Metrics: metrics,
 	}
 }
 
@@ -26,6 +28,10 @@ func (p *Producer) Start() {
 				Msg:   "hello from producer",
 				Level: "INFO",
 				Ts:    time.Now().UnixNano(),
+			}
+
+			if p.Metrics != nil {
+				p.Metrics.IncProduced()
 			}
 			p.OutChan <- msg
 		}
