@@ -11,32 +11,25 @@ import (
 func main() {
 	logChan := make(chan domain.LogMessage, 10000)
 
+	workerCount := 5
+	metrics := application.NewMetrics(logChan, workerCount)
+	metrics.Start()
+
 	// logger
 	logger := infrastructure.NewConsoleLogger()
 
 	// producer: for all 1ms 1 log = 1000 log/s
-	producer := application.NewProducer(logChan, time.Millisecond)
+	producer := application.NewProducer(logChan, time.Millisecond, metrics)
 	producer.Start()
 
 	// worker pool
-	workers := []*application.Worker{}
 
-	for i := 1; i <= 5; i++ {
-		worker := application.NewWorker(i, logChan, logger)
-		workers = append(workers, worker)
+	for i := 1; i <= workerCount; i++ {
+		worker := application.NewWorker(i, logChan, logger, metrics)
 		worker.Start()
 	}
 
-	for i := 0; i < 2; i++ {
-		time.Sleep(1 * time.Second)
-		fmt.Print("Stats: ")
-
-		for _, w := range workers {
-			fmt.Printf("W%d=%d ", w.ID, w.Count)
-		}
-
-		fmt.Println()
-	}
+	time.Sleep(2 * time.Second) // run for 2 seconds
 
 	fmt.Println("Program finished")
 
