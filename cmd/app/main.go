@@ -39,11 +39,12 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(workerCount)
 
+	batchSize := 100
+	batchTimeout := 100 * time.Millisecond
 	// worker pool
-
 	for i := 1; i <= workerCount; i++ {
 		worker := application.NewWorker(i, logChan, logger, metrics, &wg)
-		worker.Start()
+		worker.Start(batchSize, batchTimeout)
 	}
 
 	// wait for shutdown signal
