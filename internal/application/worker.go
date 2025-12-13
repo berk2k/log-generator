@@ -5,6 +5,7 @@ import (
 	"log-generator/internal/domain"
 	"log-generator/internal/infrastructure"
 	"sync"
+	"time"
 )
 
 type Worker struct {
@@ -25,37 +26,60 @@ func NewWorker(id int, in <-chan domain.LogMessage, logger *infrastructure.Conso
 	}
 }
 
-func (w *Worker) Start(batchSize int) {
+func (w *Worker) Start(batchSize int, batchTimeout time.Duration) {
 	go func() {
 		defer w.Wg.Done()
 
-		// create batch slice
+		// Preallocate batch slice to avoid reallocation overhead
 		batch := make([]domain.LogMessage, 0, batchSize)
 
-		for msg := range w.InChan {
+		// Timeout ticker for flushing incomplete batches
+		ticker := time.NewTicker(batchTimeout)
+		defer ticker.Stop()
 
-			batch = append(batch, msg)
+	Loop:
+		for {
+			select {
 
-			// if batch full --> FLUSH
-			if len(batch) >= batchSize {
-				w.processBatch(batch)
+			// New log message received
+			case msg, ok := <-w.InChan:
+				if !ok {
+					// Input channel is closed → shutdown signal for worker
+					break Loop
+				}
 
-				// Batch reset (no allocation!)
-				batch = batch[:0]
-			}
+				// Add the log to the batch
+				batch = append(batch, msg)
 
-			if w.Metrics != nil {
-				w.Metrics.IncProcessed()
+				// Batch is full → flush immediately
+				if len(batch) >= batchSize {
+					w.processBatch(batch)
+					batch = batch[:0] // Reset slice without reallocating
+
+				}
+
+				// Count processed messages in metrics
+				if w.Metrics != nil {
+					w.Metrics.IncProcessed()
+				}
+
+			// Timeout reached → flush partial batch
+			case <-ticker.C:
+				if len(batch) > 0 {
+					w.processBatch(batch)
+					batch = batch[:0]
+				}
 			}
 		}
 
-		// Worker is going down -> flush rest of the batch
+		// Worker is exiting → flush remaining logs
 		if len(batch) > 0 {
 			w.processBatch(batch)
 		}
 	}()
 }
 
+// Handles the actual batch processing logic (e.g., file write, DB insert, network send)
 func (w *Worker) processBatch(batch []domain.LogMessage) {
-	fmt.Printf("Worker %d flushing batch of %d logs\n", w.ID, len(batch))
+	fmt.Printf("Worker %d flushed batch of %d logs\n", w.ID, len(batch))
 }
