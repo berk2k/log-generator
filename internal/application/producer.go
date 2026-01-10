@@ -23,9 +23,8 @@ func NewProducer(out chan<- domain.LogMessage, rate time.Duration, metrics *Metr
 }
 
 func (p *Producer) Start() {
-	ticker := time.NewTicker(p.Rate)
-
 	go func() { //goroutine
+		ticker := time.NewTicker(p.Rate)
 		defer ticker.Stop()
 
 		for {
@@ -37,17 +36,33 @@ func (p *Producer) Start() {
 				return
 
 			case <-ticker.C:
+				// 1) calculate queue usage
+				queueLen := len(p.OutChan)
+				queueCap := cap(p.OutChan)
+				usage := float64(queueLen) / float64(queueCap)
+
+				// 2) adaptive pacing (flow control)
+
+				// heavy backpressure -> slow down more
+				if usage > 0.9 {
+					time.Sleep(2 * time.Millisecond)
+				} else if usage > 0.8 {
+					time.Sleep(1 * time.Millisecond)
+				} else if usage > 0.5 {
+					time.Sleep(500 * time.Microsecond)
+				}
+
+				// 3) produce log
 				msg := domain.LogMessage{
 					Msg:   "hello from producer",
 					Level: "INFO",
 					Ts:    time.Now().UnixNano(),
 				}
 
+				p.OutChan <- msg
 				if p.Metrics != nil {
 					p.Metrics.IncProduced()
 				}
-
-				p.OutChan <- msg
 			}
 		}
 
