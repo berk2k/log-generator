@@ -58,11 +58,6 @@ func (w *Worker) Start(batchSize int, batchTimeout time.Duration) {
 
 				}
 
-				// Count processed messages in metrics
-				if w.Metrics != nil {
-					w.Metrics.IncProcessed()
-				}
-
 			// Timeout reached → flush partial batch
 			case <-ticker.C:
 				if len(batch) > 0 {
@@ -81,5 +76,13 @@ func (w *Worker) Start(batchSize int, batchTimeout time.Duration) {
 
 // Handles the actual batch processing logic (e.g., file write, DB insert, network send)
 func (w *Worker) processBatch(batch []domain.LogMessage) {
+	// Simulate slow IO (disk / network / external system)
+	//time.Sleep(300 * time.Millisecond)
+
 	fmt.Printf("Worker %d flushed batch of %d logs\n", w.ID, len(batch))
+
+	// Count processed messages in metrics
+	if w.Metrics != nil {
+		w.Metrics.IncProcessed()
+	}
 }
