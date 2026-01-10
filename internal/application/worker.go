@@ -9,20 +9,22 @@ import (
 )
 
 type Worker struct {
-	ID      int
-	InChan  <-chan domain.LogMessage //recieve-only
-	Logger  *infrastructure.ConsoleLogger
-	Metrics *Metrics
-	Wg      *sync.WaitGroup
+	ID       int
+	InChan   <-chan domain.LogMessage //recieve-only
+	Logger   *infrastructure.ConsoleLogger
+	Metrics  *Metrics
+	Wg       *sync.WaitGroup
+	StopChan chan struct{}
 }
 
 func NewWorker(id int, in <-chan domain.LogMessage, logger *infrastructure.ConsoleLogger, metrics *Metrics, wg *sync.WaitGroup) *Worker {
 	return &Worker{
-		ID:      id,
-		InChan:  in,
-		Logger:  logger,
-		Metrics: metrics,
-		Wg:      wg,
+		ID:       id,
+		InChan:   in,
+		Logger:   logger,
+		Metrics:  metrics,
+		Wg:       wg,
+		StopChan: make(chan struct{}),
 	}
 }
 
@@ -64,6 +66,10 @@ func (w *Worker) Start(batchSize int, batchTimeout time.Duration) {
 					w.processBatch(batch)
 					batch = batch[:0]
 				}
+
+			case <-w.StopChan:
+				// Graceful stop for this worker only
+				break Loop
 			}
 		}
 
