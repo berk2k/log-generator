@@ -59,6 +59,10 @@ func (p *WorkerPool) AddWorker() {
 
 	p.NextID++
 
+	if p.Metrics != nil {
+		p.Metrics.SetWorkers(len(p.Workers))
+	}
+
 	println("worker added:", worker.ID)
 }
 
@@ -76,6 +80,10 @@ func (p *WorkerPool) RemoveWorker() {
 
 	//remove from slice
 	p.Workers = p.Workers[:len(p.Workers)-1]
+
+	if p.Metrics != nil {
+		p.Metrics.SetWorkers(len(p.Workers))
+	}
 	println("Worker removed:", worker.ID)
 }
 
