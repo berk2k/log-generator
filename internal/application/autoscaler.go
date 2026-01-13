@@ -62,7 +62,7 @@ func (a *AutoScaler) check() {
 	//scale down
 	if usage < a.ScaleDownThreshold && workers > a.MinWorkers {
 		a.Pool.RemoveWorker()
-		println("Scaler: scalling UP, workers = ", workers-1)
+		println("Scaler: scalling Down, workers = ", workers-1)
 		return
 	}
 }
