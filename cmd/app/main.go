@@ -62,6 +62,7 @@ func main() {
 		1*time.Second, // check every 1s
 		minWorkers,    // min workers
 		10,            // max workers
+		ctx,
 	)
 	scaler.Start()
 

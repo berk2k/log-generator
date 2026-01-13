@@ -1,6 +1,7 @@
 package application
 
 import (
+	"context"
 	"log-generator/internal/domain"
 	"time"
 )
@@ -13,6 +14,7 @@ type AutoScaler struct {
 	MaxWorkers         int
 	ScaleUpThreshold   float64
 	ScaleDownThreshold float64
+	Ctx                context.Context
 }
 
 func NewAutoScaler(
@@ -21,6 +23,7 @@ func NewAutoScaler(
 	interval time.Duration,
 	min int,
 	max int,
+	ctx context.Context,
 ) *AutoScaler {
 	return &AutoScaler{
 		Pool:               pool,
@@ -30,6 +33,7 @@ func NewAutoScaler(
 		MaxWorkers:         max,
 		ScaleUpThreshold:   0.8, // %80 full
 		ScaleDownThreshold: 0.2, // %20 empty
+		Ctx:                ctx,
 	}
 }
 
@@ -38,8 +42,15 @@ func (a *AutoScaler) Start() {
 		ticker := time.NewTicker(a.Interval)
 		defer ticker.Stop()
 
-		for range ticker.C {
-			a.check()
+		for {
+			select {
+			case <-a.Ctx.Done():
+				// shutdown -> stop autoscaler
+				return
+
+			case <-ticker.C:
+				a.check()
+			}
 		}
 	}()
 }
