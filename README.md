@@ -135,7 +135,7 @@ This shows:
 | ScaleUpThreshold   | Queue usage to scale up   | 0.8 |
 | ScaleDownThreshold | Queue usage to scale down | 0.2 |
 
-## What We Learned
+## What I Learned
 1. Go Concurrency (Deep Dive)
   - Goroutines
   - Channels
